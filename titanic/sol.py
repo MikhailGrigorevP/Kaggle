@@ -167,6 +167,7 @@ x = sns.countplot(x="Fare_Category", hue="Survived", data=data_train, palette=["
 x.set_title("Survival ~ Fare")
 
 # Cabin
+data.Cabin = data.Cabin.fillna('NA')
 
 # Embarked
 
@@ -179,5 +180,25 @@ p.set_title("Survival ~ Embarking.")
 
 # Missing values
 
-data['Family'] = data.Parch + data.SibSp
-data['Is_Alone'] = data.Family == 0
+data_train['Salutation'] = data_train.Name.apply(lambda name: name.split(',')[1].split('.')[0].strip())
+data_train.Salutation.nunique()
+wc = WordCloud(width=1000, height=450, background_color='white').generate(str(data_train.Salutation.values))
+plt.imshow(wc, interpolation='bilinear')
+plt.axis('off')
+plt.tight_layout(pad=0)
+plt.show()
+
+data_train.Salutation.value_counts()
+
+grp = data_train.groupby(['Sex', 'Pclass'])
+data_train.Age = grp.Age.apply(lambda x_: x_.fillna(x_.median()))
+data_train.Age.fillna(data_train.Age.median, inplace=True)
+
+# Prediction
+
+X_pred = data[data.Survived.isnull()].drop(['Survived'], axis=1)
+
+# Training data
+train_data = data.dropna()
+feature_train = train_data['Survived']
+label_train = train_data.drop(['Survived'], axis=1)
