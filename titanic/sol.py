@@ -1,4 +1,5 @@
 import numpy as np
+import sklearn
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -21,184 +22,102 @@ data_train = pd.read_csv('train.csv')
 data_test = pd.read_csv('test.csv')
 data = pd.concat([data_train, data_test], ignore_index=True, sort=False)
 
-# data
-print(data)
-
-# data shape
-print(data.shape)
-# (1309, 12)
-
-# data info
-print(data.info())
-
-# Data columns (total 12 columns):
-#  #   Column       Non-Null Count  Dtype
-# ---  ------       --------------  -----
-#  0   PassengerId  1309 non-null   int64
-#  1   Survived     891 non-null    float64
-#  2   Pclass       1309 non-null   int64
-#  3   Name         1309 non-null   object
-#  4   Sex          1309 non-null   object
-#  5   Age          1046 non-null   float64
-#  6   SibSp        1309 non-null   int64
-#  7   Parch        1309 non-null   int64
-#  8   Ticket       1309 non-null   object
-#  9   Fare         1308 non-null   float64
-#  10  Cabin        295 non-null    object
-#  11  Embarked     1307 non-null   object
-
-# Missing values
-plt.ylabel("Missing values:")
-plt.plot(pd.DataFrame(data.isnull().sum()))
-plt.show()
-print(data.isnull().sum())
-
-sns.heatmap(data.isnull(), cbar=False).set_title("Missing values heatmap")
-plt.show()
-
-# PassengerId       0
-# Survived        418   <--
-# Pclass            0
-# Name              0
-# Sex               0
-# Age             263   <--
-# SibSp             0
-# Parch             0
-# Ticket            0
-# Fare              1
-# Cabin          1014   <--
-# Embarked          2   <--
-
-# PassengerId
-# > Doesn't affect survived
-
-# Survived
-# > Validation
-
-# Pclass
-
-pClass_1 = round(
-    (data_train[data_train.Pclass == 1].Survived == 1).value_counts()[1] /
-    len(data_train[data_train.Pclass == 1]) * 100, 2)
-pClass_2 = round(
-    (data_train[data_train.Pclass == 2].Survived == 1).value_counts()[1] /
-    len(data_train[data_train.Pclass == 2]) * 100, 2)
-pClass_3 = round(
-    (data_train[data_train.Pclass == 3].Survived == 1).value_counts()[1] /
-    len(data_train[data_train.Pclass == 3]) * 100, 2)
-
-pClassDf = pd.DataFrame(
-    {"Survived": {"Class 1": pClass_1,
-                  "Class 2": pClass_2,
-                  "Class 3": pClass_3},
-     "Not survived": {"Class 1": 100 - pClass_1,
-                      "Class 2": 100 - pClass_2,
-                      "Class 3": 100 - pClass_3}})
-pClassDf.plot.bar().set_title("Survived ~ Slass")
-plt.show()
-
-# Name
-# > Doesn't affect survived
-
-# Sex
-
-print(data.Sex)
-
-sex_1 = round(
-    (data_train[data_train.Sex == 'male'].Survived == 1).value_counts()[1] /
-    len(data_train[data_train.Sex == 'male']) * 100, 2)
-sex_2 = round(
-    (data_train[data_train.Sex == 'female'].Survived == 1).value_counts()[1] /
-    len(data_train[data_train.Sex == 'female']) * 100, 2)
-
-pClassDf = pd.DataFrame(
-    {"Survived": {"Male": sex_1,
-                  "Female": sex_2},
-     "Not survived": {"Male": 100 - sex_1,
-                      "Female": 100 - sex_2}})
-pClassDf.plot.bar().set_title("Survived ~ Sex")
-plt.show()
-
-# Age
-
-print(data.Age)
-
 data['Age_Range'] = pd.cut(data.Age, [0, 10, 20, 30, 40, 50, 60, 70, 80])
-sns.countplot(x="Age_Range", hue="Survived", data=data, palette=["C1", "C0"]).legend(
-    labels=["Not survived", "Survived"])
+data['Family'] = data.Parch + data.SibSp
+data['Is_Alone'] = data.Family == 0
 
-# SibSp
+data['Fare_Category'] = pd.cut(data_train['Fare'], bins=[0, 7.90, 14.45, 31.28, 120], labels=['Low', 'Mid',
+                                                                                              'High_Mid', 'High'])
 
-print(data.SibSp)
+# Missing
 
-ss = pd.DataFrame()
-ss['survived'] = data_train.Survived
-ss['sibling_spouse'] = pd.cut(data_train.SibSp, [0, 1, 2, 3, 4, 5, 6, 7, 8], include_lowest=True)
+data['Salutation'] = data.Name.apply(lambda name: name.split(',')[1].split('.')[0].strip())
+data.Salutation.nunique()
 
-x = sns.countplot(x="sibling_spouse", hue="survived", data=ss, palette=["C1", "C0"]).legend(
-    labels=["Not survived", "Survived"])
-x.set_title("Survival ~ Number of siblings or spouses")
-plt.show()
+grp = data.groupby(['Sex', 'Pclass'])
+data.Age = grp.Age.apply(lambda x_: x_.fillna(x_.median()))
+data.Age.fillna(data.Age.median, inplace=True)
 
-# Parch
-
-print(data.Parch)
-
-pc = pd.DataFrame()
-pc['survived'] = data_train.Survived
-pc['parents_children'] = pd.cut(data_train.Parch, [0, 1, 2, 3, 4, 5, 6], include_lowest=True)
-x = sns.countplot(x="parents_children", hue="survived", data=pc, palette=["C1", "C0"]).legend(
-    labels=["Not survived", "Survived"])
-
-x.set_title("Survival ~ Parents/Children")
-plt.show()
-
-# Ticket
-# > Doesn't affect survived
-
-# Fare
-
-print(data.Fare)
-
-data_train['Fare_Category'] = pd.cut(data_train['Fare'], bins=[0, 7.90, 14.45, 31.28, 120], labels=['Low', 'Mid',
-                                                                                                    'High_Mid', 'High'])
-x = sns.countplot(x="Fare_Category", hue="Survived", data=data_train, palette=["C1", "C0"]).legend(
-    labels=["Not survived", "Survived"])
-x.set_title("Survival ~ Fare")
-
-# Cabin
+data.Embarked.fillna(data.Embarked.mode()[0], inplace=True)
 data.Cabin = data.Cabin.fillna('NA')
 
-# Embarked
+data = pd.concat([data, pd.get_dummies(data.Cabin, prefix="Cabin"),
+                  pd.get_dummies(data.Age_Range, prefix="Age_Range"),
+                  pd.get_dummies(data.Embarked, prefix="Emb", drop_first=True),
+                  pd.get_dummies(data.Salutation, prefix="Title", drop_first=True),
+                  pd.get_dummies(data.Fare_Category, prefix="Fare", drop_first=True),
+                  pd.get_dummies(data.Pclass, prefix="Class", drop_first=True)], axis=1)
 
-print(data.Embarked)
+data['Is_Alone'] = LabelEncoder().fit_transform(data['Is_Alone'])
+data['Sex'] = LabelEncoder().fit_transform(data['Sex'])
 
-p = sns.countplot(x="Embarked", hue="Survived", data=data_train, palette=["C1", "C0"])
-p.set_xticklabels(["Southampton", "Cherbourg", "Queenstown"])
-p.legend(labels=["Not survived", "Survived"])
-p.set_title("Survival ~ Embarking.")
+data.drop(['Pclass', 'Fare', 'Cabin', 'Fare_Category', 'Name', 'Salutation', 'Ticket', 'Embarked', 'Age_Range', 'SibSp',
+           'Parch', 'Age'], axis=1, inplace=True)
 
-# Missing values
+# scaler
 
-data_train['Salutation'] = data_train.Name.apply(lambda name: name.split(',')[1].split('.')[0].strip())
-data_train.Salutation.nunique()
-wc = WordCloud(width=1000, height=450, background_color='white').generate(str(data_train.Salutation.values))
-plt.imshow(wc, interpolation='bilinear')
-plt.axis('off')
-plt.tight_layout(pad=0)
-plt.show()
-
-data_train.Salutation.value_counts()
-
-grp = data_train.groupby(['Sex', 'Pclass'])
-data_train.Age = grp.Age.apply(lambda x_: x_.fillna(x_.median()))
-data_train.Age.fillna(data_train.Age.median, inplace=True)
+scaler = sklearn.preprocessing.StandardScaler()
 
 # Prediction
 
 X_pred = data[data.Survived.isnull()].drop(['Survived'], axis=1)
 
 # Training data
+
 train_data = data.dropna()
-feature_train = train_data['Survived']
-label_train = train_data.drop(['Survived'], axis=1)
+X = train_data.drop(['Survived'], axis=1)
+y = train_data['Survived']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y)
+
+# X_train = scaler.fit_transform(X_train)
+# X_test = scaler.transform(X_test)
+
+# Random forest
+# entropy
+# gini
+
+alg_frst_model = RandomForestClassifier(random_state=1)
+alg_frst_params = [{
+    "criterion": ['entropy', 'gini'],
+    "n_estimators": [350, 400, 450, 500, 550, 600, 650, 700],
+    "min_samples_split": [6, 8, 10],
+    "min_samples_leaf": [1, 2, 4],
+    "n_jobs": [-1, 1, 2]
+}]
+
+cv = sklearn.model_selection.StratifiedKFold(n_splits=3, shuffle=True, random_state=1)
+#
+# alg_frst_grid = sklearn.model_selection.GridSearchCV(alg_frst_model, alg_frst_params, cv=cv, refit=True, verbose=1,
+#                                                      n_jobs=-1)
+# alg_frst_grid.fit(X_train, np.ravel(y_train))
+# alg_frst_best = alg_frst_grid.best_estimator_
+# print("Accuracy (random forest auto): {} with params {}"
+#       .format(alg_frst_grid.best_score_, alg_frst_grid.best_params_))
+
+# Accuracy (random forest auto): 0.8218211941038028 with params {'criterion': 'entropy', 'min_samples_leaf': 1, 'min_samples_split': 10, 'n_estimators': 350, 'n_jobs': -1}
+
+clf = RandomForestClassifier(criterion='entropy',
+                             n_estimators=350,
+                             min_samples_split=10,
+                             min_samples_leaf=1,
+                             max_features='auto',
+                             oob_score=True,
+                             random_state=1,
+                             n_jobs=-1)
+
+clf.fit(X_train, y_train)
+print("RF Accuracy: " + repr(round(clf.score(X_test, y_test) * 100, 2)) + "%")
+
+result_rf = cross_val_score(clf, X_train, y_train, cv=10, scoring='accuracy')
+print('The cross validated score for Random forest is:', round(result_rf.mean() * 100, 2))
+y_pred = cross_val_predict(clf, X_train, y_train, cv=10)
+
+
+result = clf.predict(X_pred)
+submission = pd.DataFrame({'PassengerId': X_pred.PassengerId, 'Survived': result})
+submission.Survived = submission.Survived.astype(int)
+print(submission.shape)
+filename = 'TitanicPredictions.csv'
+submission.to_csv(filename, index=False)
+print('Saved file: ' + filename)
