@@ -1,3 +1,3 @@
 # Kaggle
 
-Repository for solutions of kaggle competitions
+Repository for diffrent solutions of Kaggle Classification competitions
