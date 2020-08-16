@@ -10,7 +10,8 @@ Repository for different solutions of Kaggle classification competitions
 `In this competition, your goal is to correctly identify digits from a dataset of tens of thousands of handwritten images`
 - Titanic: _https://www.kaggle.com/c/titanic_
 `Use machine learning to create a model that predicts which passengers survived the Titanic shipwreck.`
-
+- Red Wine: _https://www.kaggle.com/mikhailg0/red-wine-classification_
+`Dataset`
 ---
 
 **Me on Kaggle:** _https://www.kaggle.com/mikhailg0_
