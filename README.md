@@ -12,6 +12,8 @@ Repository for different solutions of Kaggle classification competitions
 `Use machine learning to create a model that predicts which passengers survived the Titanic shipwreck.`
 - Red Wine: _https://www.kaggle.com/mikhailg0/red-wine-classification_
 `Dataset`
+- Iris Species: _https://www.kaggle.com/uciml/iris
+`Dataset`
 ---
 
 **Me on Kaggle:** _https://www.kaggle.com/mikhailg0_
